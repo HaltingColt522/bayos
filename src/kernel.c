@@ -24,12 +24,26 @@ static void hcf() {
 	}
 }
 
+void *getPointAddressFromFramebuffer(struct limine_framebuffer *fb,uint64_t x, uint64_t y) {
+	uint8_t *fb_bytes = (uint8_t *) fb->address;
+	return (void *)(fb_bytes + (y * fb->pitch) + (x * (fb->bpp / 8)));
+}
+
 __attribute__((noreturn))
 void kmain() {
 	if(!LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision)) {hcf();}
 
 	if((framebuffer_request.response == NULL) || 
 		(framebuffer_request.response->framebuffer_count < 1)) {hcf();}
+
+	struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
+
+	for (uint64_t y = 100; y < 150; y++) {
+		for (uint64_t x = 100; x < 150; x++) {
+			uint32_t *pixel = (uint32_t *) getPointAddressFromFramebuffer(fb, x, y);
+			*pixel = 0x00FF0000;
+		}
+	}
 
 	hcf();
 }
