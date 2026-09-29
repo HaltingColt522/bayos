@@ -20,16 +20,21 @@ LDFLAGS := -nostdlib \
 		   -Wl,--build-id=none \
 		   -T src/linker.ld
 
+
 BUILD_DIR := build
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/kernel.o: src/kernel.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c src/kernel.c -o $(BUILD_DIR)/kernel.o
+SRCS := $(wildcard src/*.c)
 
-$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel.o src/linker.ld
-	$(CC) $(LDFLAGS) $(BUILD_DIR)/kernel.o -o $(BUILD_DIR)/kernel.elf
+OBJS := $(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+
+$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/kernel.elf: $(OBJS) src/linker.ld
+	$(CC) $(LDFLAGS) $(OBJS) -o $(BUILD_DIR)/kernel.elf
 
 limine-binary/limine:
 	$(MAKE) -C limine-binary
