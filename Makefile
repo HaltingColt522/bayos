@@ -9,7 +9,7 @@ CFLAGS := -ffreestanding \
 		  -mno-80387 \
 		  -mcmodel=kernel \
 		  -mgeneral-regs-only \
-		  -Isrc \
+		  -Isrc/include \
 		  -Wall \
 		  -Wextra \
 		  -std=c11

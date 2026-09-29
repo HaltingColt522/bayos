@@ -1,21 +1,11 @@
-#include "limine.h"
-#include "serialio_k.h"
+#include <limine.h>
+#include <framebuffer_k.h>
+#include <memmap_k.h>
+#include <serialio_k.h>
 #include <stddef.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
-
-__attribute__((used, section(".limine_requests")))
-static volatile struct limine_framebuffer_request framebuffer_request = {
-	.id = LIMINE_FRAMEBUFFER_REQUEST_ID,
-	.revision = 0
-};
-
-__attribute__((used, section(".limine_requests")))
-static volatile struct limine_memmap_request memmap_request = {
-	.id = LIMINE_MEMMAP_REQUEST_ID,
-	.revision = 0
-};
 
 __attribute__((used, section(".limine_requests_start")))
 static volatile uint64_t limine_request_start_marker[] = LIMINE_REQUESTS_START_MARKER;
@@ -29,11 +19,6 @@ static void hcf() {
 	for(;;) {
 		__asm__ volatile("hlt");
 	}
-}
-
-void *getPointAddressFromFramebuffer(struct limine_framebuffer *fb,uint64_t x, uint64_t y) {
-	uint8_t *fb_bytes = (uint8_t *) fb->address;
-	return (void *)(fb_bytes + (y * fb->pitch) + (x * (fb->bpp / 8)));
 }
 
 __attribute__((noreturn))
