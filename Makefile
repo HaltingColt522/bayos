@@ -51,7 +51,8 @@ $(BUILD_DIR)/image.iso: $(BUILD_DIR)/kernel.elf limine.conf limine-binary/limine
 	./limine-binary/limine bios-install $(BUILD_DIR)/image.iso --force
 
 run: $(BUILD_DIR)/image.iso
-	qemu-system-x86_64 -cdrom $(BUILD_DIR)/image.iso
+	qemu-system-x86_64 -cdrom $(BUILD_DIR)/image.iso \
+		-serial stdio
 
 clean:
 	rm -rf $(BUILD_DIR)
