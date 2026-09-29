@@ -47,3 +47,15 @@ void serial_puts(const char *s) {
 		serial_putc(*sP);
 	}
 }
+
+void serial_put_hex64(uint64_t value) {
+	static const char hex_chars[] = "0123456789ABCDEF";
+
+	serial_putc('0');
+	serial_putc('x');
+
+	for (int shift = 60; shift >= 0; shift -= 4) {
+		uint8_t nibble = (value >> shift) & 0xF;
+		serial_putc(hex_chars[nibble]);
+	}
+}
