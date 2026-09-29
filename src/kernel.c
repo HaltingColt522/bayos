@@ -1,4 +1,5 @@
 #include "limine.h"
+#include "serialio_k.h"
 #include <stddef.h>
 
 __attribute__((used, section(".limine_requests")))
