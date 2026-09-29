@@ -1,6 +1,7 @@
 #include <limine.h>
 #include <framebuffer_k.h>
 #include <memmap_k.h>
+#include <hhdm_k.h>
 #include <serialio_k.h>
 #include <stddef.h>
 
@@ -23,13 +24,15 @@ static void hcf() {
 
 __attribute__((noreturn))
 void kmain() {
-	if(!LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision)) {hcf();}
+	if(!LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision)) { hcf(); }
 
 	if((framebuffer_request.response == NULL) || 
-		(framebuffer_request.response->framebuffer_count < 1)) {hcf();}
+		(framebuffer_request.response->framebuffer_count < 1)) { hcf(); }
 
 	if((memmap_request.response == NULL) ||
-		(memmap_request.response->entry_count < 1)) {hcf();}
+		(memmap_request.response->entry_count < 1)) { hcf(); }
+
+	if(hhdm_request.response == NULL) { hcf(); }
 
 	struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
 
