@@ -30,3 +30,20 @@ int8_t serial_init(void) {
 
 	return 0;
 }
+
+void serial_putc(const char c) {
+	while((inb(PORT + 5) & 0x20) == 0) {
+		/* 0 = TX reg is busy -> don't send! */
+	}
+
+	outb(PORT + 0, c);
+}
+
+void serial_puts(const char *s) {
+	for (const char *sP = s; *sP != '\0'; ++sP) {
+		if(*sP == '\n') {
+			serial_putc('\r');
+		}
+		serial_putc(*sP);
+	}
+}

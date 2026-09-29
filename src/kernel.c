@@ -39,12 +39,16 @@ void kmain() {
 
 	struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
 
+	serial_init();
+
 	for (uint64_t y = 100; y < 150; y++) {
 		for (uint64_t x = 100; x < 150; x++) {
 			uint32_t *pixel = (uint32_t *) getPointAddressFromFramebuffer(fb, x, y);
 			*pixel = 0x00FF0000;
 		}
 	}
+
+	serial_puts("Hello world!\n");
 
 	hcf();
 }
