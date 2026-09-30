@@ -6,5 +6,4 @@
 __attribute__((used, section(".limine_requests")))
 extern volatile struct limine_memmap_request memmap_request;
 
-
 #endif
