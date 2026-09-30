@@ -8,6 +8,28 @@ static uint8_t *bitmap_ptr = NULL;
 static uint64_t bitmap_size;
 static uint64_t total_frames;
 
+static inline void pmm_setb(uint64_t frame) {
+	uint64_t byte_index = frame / 8;
+	uint64_t bit_index = frame % 8;
+	uint8_t mask = (uint8_t)(1 << bit_index);
+
+	bitmap_ptr[byte_index] |= mask;
+}
+static inline void pmm_delb(uint64_t frame) {
+	uint64_t byte_index = frame / 8;
+	uint64_t bit_index = frame % 8;
+	uint8_t mask = (uint8_t)(1 << bit_index);
+
+	bitmap_ptr[byte_index]&=~mask;
+}
+static inline uint8_t pmm_getb(uint64_t frame) {
+	uint64_t byte_index = frame / 8;
+	uint64_t bit_index = frame % 8;
+	uint8_t mask = (uint8_t)(1 << bit_index);
+
+	return (bitmap_ptr[byte_index]&mask) != 0;
+}
+
 int8_t pmm_init(void) {
 	if((memmap_request.response == NULL) || (hhdm_request.response == NULL)) {
 		/* memmap or hhdm faulty */
@@ -31,6 +53,24 @@ int8_t pmm_init(void) {
 
 	total_frames = highest_addr / PMM_FRAME_SIZE;
 	bitmap_size = (total_frames + 7) / 8;
+
+	uint64_t bitmap_phys = 0;
+
+	for(uint64_t i = 0; i < memmap_response->entry_count; i++) {
+		if((memmap_response->entries[i]->type == LIMINE_MEMMAP_USABLE) &&
+			(memmap_response->entries[i]->base >= PMM_SKIP_LOWER) &&
+			(memmap_response->entries[i]->length >= bitmap_size))
+		{
+			bitmap_phys = memmap_response->entries[i]->base;
+			bitmap_ptr = (uint8_t *)(hhdm_offset + bitmap_phys);
+			break;
+		}
+	}
+
+	if(bitmap_phys == 0) {
+		/* no memory for bitmap found */
+		return 2;
+	}
 
 	return 0;
 }
