@@ -30,16 +30,8 @@ static inline uint8_t pmm_getb(uint64_t frame) {
 	return (bitmap_ptr[byte_index]&mask) != 0;
 }
 
-int8_t pmm_init(void) {
-	if((memmap_request.response == NULL) || (hhdm_request.response == NULL)) {
-		/* memmap or hhdm faulty */
-		return 1;
-	}
-
-	uint64_t hhdm_offset = hhdm_request.response->offset;
-	struct limine_memmap_response *memmap_response = memmap_request.response;
-
-	/* find highest address for bitmap*/
+/*find highest address for bitmap*/
+static uint64_t find_highest_addr(const struct limine_memmap_response *memmap_response) {
 	uint64_t highest_addr = 0x00;
 	for(uint64_t i = 0; i < memmap_response->entry_count; i++) {
 		if((memmap_response->entries[i]->type == LIMINE_MEMMAP_USABLE) &&
@@ -51,27 +43,31 @@ int8_t pmm_init(void) {
 		}
 	}
 
-	total_frames = highest_addr / PMM_FRAME_SIZE;
-	bitmap_size = (total_frames + 7) / 8;
+	return highest_addr;
+}
 
+/* find region for bitmap to fit bitmap_size*/
+static uint64_t find_bitmap_region(const struct limine_memmap_response *memmap_response,
+		uint64_t req_size) {
 	uint64_t bitmap_phys = 0;
 
 	for(uint64_t i = 0; i < memmap_response->entry_count; i++) {
 		if((memmap_response->entries[i]->type == LIMINE_MEMMAP_USABLE) &&
 			(memmap_response->entries[i]->base >= PMM_SKIP_LOWER) &&
-			(memmap_response->entries[i]->length >= bitmap_size))
+			(memmap_response->entries[i]->length >= req_size))
 		{
 			bitmap_phys = memmap_response->entries[i]->base;
-			bitmap_ptr = (uint8_t *)(hhdm_offset + bitmap_phys);
+
 			break;
 		}
 	}
 
-	if(bitmap_phys == 0) {
-		/* no memory for bitmap found */
-		return 2;
-	}
+	return bitmap_phys;
+}
 
+/* init bitmap: occupy all memory, free usable memory, lock bitmap */
+static void init_bitmap(const struct limine_memmap_response *memmap_response,
+		const uint64_t bitmap_phys) {
 	for(uint64_t i = 0; i < bitmap_size; i++) {
 		bitmap_ptr[i] = 0xFF;
 	}
@@ -94,6 +90,32 @@ int8_t pmm_init(void) {
 	for(uint64_t frame = start; frame < start + bitmap_frames; frame++) {
 		pmm_setb(frame);
 	}
+}
+
+int8_t pmm_init(void) {
+	if((memmap_request.response == NULL) || (hhdm_request.response == NULL)) {
+		/* memmap or hhdm faulty */
+		return 1;
+	}
+
+	uint64_t hhdm_offset = hhdm_request.response->offset;
+	struct limine_memmap_response *memmap_response = memmap_request.response;
+
+	uint64_t highest_addr = find_highest_addr(memmap_response);
+
+	total_frames = highest_addr / PMM_FRAME_SIZE;
+	bitmap_size = (total_frames + 7) / 8;
+
+	uint64_t bitmap_phys = find_bitmap_region(memmap_response, bitmap_size);
+
+	if(bitmap_phys == 0) {
+		/* no memory for bitmap found */
+		return 2;
+	}
+
+	bitmap_ptr = (uint8_t *)(hhdm_offset + bitmap_phys);
+
+	init_bitmap(memmap_response, bitmap_phys);
 
 	return 0;
 }
