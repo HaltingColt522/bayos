@@ -9,5 +9,7 @@
 #define PMM_SKIP_LOWER 0x100000ULL
 
 int8_t pmm_init(void);
+uint64_t pmm_alloc_frame(void);
+int8_t pmm_free_frame(uint64_t addr);
 
 #endif

@@ -90,6 +90,44 @@ static void init_bitmap(const struct limine_memmap_response *memmap_response) {
 	}
 }
 
+/* return a single free frame and reserve it */
+uint64_t pmm_alloc_frame(void) {
+	for(uint64_t frame = (PMM_SKIP_LOWER / PMM_FRAME_SIZE); frame < total_frames; frame++) {
+		if(pmm_getb(frame) == PMM_FRAME_FREE) {
+			pmm_setb(frame);
+			/* note: phys addr */
+			return frame * PMM_FRAME_SIZE;
+		}
+	}
+
+	return 0;
+}
+
+int8_t pmm_free_frame(uint64_t addr) {
+	uint64_t frame = addr / PMM_FRAME_SIZE;
+
+	if((frame >= total_frames) || (addr % PMM_FRAME_SIZE != 0) ||
+		(addr < PMM_SKIP_LOWER)) {
+		/* something is faulty. either frame beyond frame limits or addr is not
+		 * correctly aligned*/
+		return 1;
+	}
+
+	
+	if((frame >= bitmap_start) && (frame < bitmap_end)) {
+		/* bitmap region is protected and should not be freed by anything */
+		return 3;
+	}
+
+	if(pmm_getb(frame) == PMM_FRAME_USED) {
+		pmm_delb(frame);
+		return 0;
+	}
+
+	/* something weird e.g. double-free happened */
+	return 2;
+}
+
 int8_t pmm_init(void) {
 	if((memmap_request.response == NULL) || (hhdm_request.response == NULL)) {
 		/* memmap or hhdm faulty */
