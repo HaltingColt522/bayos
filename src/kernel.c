@@ -4,6 +4,7 @@
 #include <hhdm_k.h>
 #include <serialio_k.h>
 #include <stddef.h>
+#include <pmm_k.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
@@ -34,9 +35,11 @@ void kmain() {
 
 	if(hhdm_request.response == NULL) { hcf(); }
 
-	struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
-
 	serial_init();
+
+	if(pmm_init() != 0) { hcf(); }
+
+	struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
 
 	for (uint64_t y = 100; y < 150; y++) {
 		for (uint64_t x = 100; x < 150; x++) {
