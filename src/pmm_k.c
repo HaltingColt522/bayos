@@ -7,6 +7,8 @@
 static uint8_t *bitmap_ptr = NULL;
 static uint64_t bitmap_size;
 static uint64_t total_frames;
+static uint64_t bitmap_start;
+static uint64_t bitmap_end;
 
 static inline void pmm_setb(uint64_t frame) {
 	uint64_t byte_index = frame / 8;
@@ -66,8 +68,7 @@ static uint64_t find_bitmap_region(const struct limine_memmap_response *memmap_r
 }
 
 /* init bitmap: occupy all memory, free usable memory, lock bitmap */
-static void init_bitmap(const struct limine_memmap_response *memmap_response,
-		const uint64_t bitmap_phys) {
+static void init_bitmap(const struct limine_memmap_response *memmap_response) {
 	for(uint64_t i = 0; i < bitmap_size; i++) {
 		bitmap_ptr[i] = 0xFF;
 	}
@@ -84,10 +85,7 @@ static void init_bitmap(const struct limine_memmap_response *memmap_response,
 		}
 	}
 
-	uint64_t bitmap_frames = (bitmap_size + PMM_FRAME_SIZE - 1) / PMM_FRAME_SIZE;
-	uint64_t start = bitmap_phys / PMM_FRAME_SIZE;
-
-	for(uint64_t frame = start; frame < start + bitmap_frames; frame++) {
+	for(uint64_t frame = bitmap_start; frame < bitmap_end; frame++) {
 		pmm_setb(frame);
 	}
 }
@@ -113,9 +111,12 @@ int8_t pmm_init(void) {
 		return 2;
 	}
 
+	bitmap_start = bitmap_phys / PMM_FRAME_SIZE;
+	bitmap_end = (bitmap_phys + bitmap_size + PMM_FRAME_SIZE - 1) / PMM_FRAME_SIZE;
+
 	bitmap_ptr = (uint8_t *)(hhdm_offset + bitmap_phys);
 
-	init_bitmap(memmap_response, bitmap_phys);
+	init_bitmap(memmap_response);
 
 	return 0;
 }
