@@ -5,6 +5,7 @@ CFLAGS := -ffreestanding \
 		  -fno-stack-check \
 		  -fno-pic \
 		  -fno-pie \
+		  -fno-tree-loop-distribute-patterns \
 		  -mno-red-zone \
 		  -mno-80387 \
 		  -mcmodel=kernel \
