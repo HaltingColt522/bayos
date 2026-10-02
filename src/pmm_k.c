@@ -9,6 +9,7 @@ static uint64_t bitmap_size;
 static uint64_t total_frames;
 static uint64_t bitmap_start;
 static uint64_t bitmap_end;
+static const struct limine_memmap_response *pmm_memmap_response;
 
 static inline void pmm_setb(uint64_t frame) {
 	uint64_t byte_index = frame / 8;
@@ -24,6 +25,7 @@ static inline void pmm_delb(uint64_t frame) {
 
 	bitmap_ptr[byte_index]&=~mask;
 }
+
 static inline uint8_t pmm_getb(uint64_t frame) {
 	uint64_t byte_index = frame / 8;
 	uint64_t bit_index = frame % 8;
@@ -103,17 +105,29 @@ uint64_t pmm_alloc_frame(void) {
 	return 0;
 }
 
+static int8_t pmm_is_usable(uint64_t addr) {
+	for(uint64_t i = 0; i < pmm_memmap_response->entry_count; i++) {
+		struct limine_memmap_entry *entry = pmm_memmap_response->entries[i];
+
+		if((entry->type == LIMINE_MEMMAP_USABLE) && ((entry->base <= addr) && 
+					(addr < (entry->base + entry->length)))) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 int8_t pmm_free_frame(uint64_t addr) {
 	uint64_t frame = addr / PMM_FRAME_SIZE;
 
 	if((frame >= total_frames) || (addr % PMM_FRAME_SIZE != 0) ||
-		(addr < PMM_SKIP_LOWER)) {
-		/* something is faulty. either frame beyond frame limits or addr is not
-		 * correctly aligned*/
+		(addr < PMM_SKIP_LOWER) || (pmm_is_usable(addr) == 0)) {
+		/* something is faulty. either frame beyond frame limits, addr is not
+		 * correctly aligned or not limine_usable type*/
 		return 1;
 	}
 
-	
 	if((frame >= bitmap_start) && (frame < bitmap_end)) {
 		/* bitmap region is protected and should not be freed by anything */
 		return 3;
@@ -135,14 +149,14 @@ int8_t pmm_init(void) {
 	}
 
 	uint64_t hhdm_offset = hhdm_request.response->offset;
-	struct limine_memmap_response *memmap_response = memmap_request.response;
+	pmm_memmap_response = memmap_request.response;
 
-	uint64_t highest_addr = find_highest_addr(memmap_response);
+	uint64_t highest_addr = find_highest_addr(pmm_memmap_response);
 
 	total_frames = highest_addr / PMM_FRAME_SIZE;
 	bitmap_size = (total_frames + 7) / 8;
 
-	uint64_t bitmap_phys = find_bitmap_region(memmap_response, bitmap_size);
+	uint64_t bitmap_phys = find_bitmap_region(pmm_memmap_response, bitmap_size);
 
 	if(bitmap_phys == 0) {
 		/* no memory for bitmap found */
@@ -154,7 +168,7 @@ int8_t pmm_init(void) {
 
 	bitmap_ptr = (uint8_t *)(hhdm_offset + bitmap_phys);
 
-	init_bitmap(memmap_response);
+	init_bitmap(pmm_memmap_response);
 
 	return 0;
 }
