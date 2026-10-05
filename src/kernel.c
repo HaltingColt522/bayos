@@ -5,6 +5,7 @@
 #include <serialio_k.h>
 #include <stddef.h>
 #include <pmm_k.h>
+#include <printf_k.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
@@ -48,7 +49,7 @@ void kmain() {
 		}
 	}
 
-	serial_puts("Hello world!\n");
+	kprintf("Hello world!\n");
 
 	hcf();
 }
