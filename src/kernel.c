@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <pmm_k.h>
 #include <printf_k.h>
+#include <gdt_k.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
@@ -37,6 +38,8 @@ void kmain() {
 	if(hhdm_request.response == NULL) { hcf(); }
 
 	serial_init();
+
+	if(gdt_init() != 0) { hcf(); }
 
 	if(pmm_init() != 0) { hcf(); }
 
